@@ -80,7 +80,6 @@ void initialise(const dictionary& windkesselProperties)
      wk[out_index].C 			= C;
      wk[out_index].Z 			= Z;
      wk[out_index].id 			= out_index;
-				
    }
 
 
@@ -173,7 +172,7 @@ double back_derivative(double xp, double xp2)
 		return d;
 }
 
-double calculate_flow_rate_additional(int i, fvMesh & mesh, volVectorField & U)
+/*double calculate_flow_rate_additional(int i, fvMesh & mesh, volVectorField & U)
 {
 	scalar flux = 0.0;
 
@@ -215,7 +214,7 @@ double calculate_flow_rate_additional(int i, fvMesh & mesh, volVectorField & U)
 
 	return flux;
 
-}
+}*/
 
 double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 {
@@ -243,11 +242,11 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 
 	//wk[i].Q_current = calculate_flow_rate(i,mesh,U);
 	wk[i].Q_current = calculate_flow_rate(i,mesh,phi);
-	dpc = derivative(wk[i].Pc_current,wk[i].Pc_previous,wk[i].Pc_previous2);
-	dpq = derivative(wk[i].Q_current,wk[i].Q_previous,wk[i].Q_previous2);
+	dpc = derivative(wk[i].Pc_current, wk[i].Pc_previous, wk[i].Pc_previous2);
+	dpq = derivative(wk[i].Q_current, wk[i].Q_previous, wk[i].Q_previous2);
 
 	p = wk[i].Q_current
-	- wk[i].C*back_derivative(wk[i].P_previous,wk[i].P_previous2)
+	- wk[i].C*back_derivative(wk[i].P_previous, wk[i].P_previous2)
 	+ wk[i].Z*(wk[i].C*dpq+wk[i].Q_current/wk[i].R)
 	+ wk[i].Pout_current/wk[i].R+wk[i].C*dpc;
 
@@ -265,6 +264,7 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 
 void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
+	// Update variables to new "previous" and "previous2", then update pressure at outlet
 
   int i;
 

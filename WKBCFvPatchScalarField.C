@@ -116,11 +116,13 @@ void WKBCFvPatchScalarField::updateCoeffs()
 
     const scalar current_pressure = store[index_]; 
 
+    // hard code density for now
+    const scalar rho_f = 1.2;
 
     /*Applying the pressure to each face on the outlet*/
     forAll(report,it)
     {
-		report[it] = current_pressure/1060;
+		report[it] = current_pressure/rho_f;
 		
     }
  

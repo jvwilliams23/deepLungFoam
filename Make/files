@@ -1,8 +1,8 @@
-pimpleFoam.C
+deepLungFoam.C
 WKBCFvPatchScalarField.C
 
 
-EXE = $(FOAM_USER_APPBIN)/windkesselSol
+EXE = $(FOAM_USER_APPBIN)/deepLungFoam
 
 
 
