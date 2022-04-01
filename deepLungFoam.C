@@ -81,9 +81,9 @@ Info<< "\nStarting time loop\n" << endl;
 
         runTime++;
 
-	//dolookup(runTime);
-
         Info<< "Time = " << runTime.timeName() << nl << endl;
+        t = runTime.value();
+        dt = runTime.deltaTValue();
 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())

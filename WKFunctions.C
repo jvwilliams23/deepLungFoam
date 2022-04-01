@@ -1,6 +1,9 @@
 
 double RHO_0;
 double dt;
+double t;
+// double time;
+double drivingPressure;
 int N_OUTLETS;
 //char* patch_names[] = {"OUTLET_ACA","OUTLET_MCA"};
 DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
@@ -19,6 +22,9 @@ typedef struct {
 	double Pc_current;		/* Current back-pressure */
 	double Pc_previous;	/* Previous back-pressure */
 	double Pc_previous2;  /* 2 Previous back-pressure */
+	double volumeCurrent;
+	double volumePrevious;
+	// double drivingPressure;
 	int id;			/* Windkessel element id */
 	double R;		/* Resistance */
 	double C;		/* Compliance */
@@ -51,6 +57,8 @@ void initialise(const dictionary& windkesselProperties)
 		wk[i].Pc_current 	= 0;	/* Intramural pressure */
 		wk[i].Pc_previous 	= 0;
 		wk[i].Pc_previous2 	= 0;
+		wk[i].volumeCurrent = 0.0;
+		wk[i].volumePrevious = 0.0;
 	}	
 
 
@@ -237,36 +245,62 @@ double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 
 void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
-  
-	scalar p,dpc,dpq;
+	// scalar p,dpc,dpq;
+	scalar cmH20_to_pa = 98.0665;
 
-	//wk[i].Q_current = calculate_flow_rate(i,mesh,U);
+	// define some hard-coded global parameters
+	scalar R_global = 7.0e-3 * cmH20_to_pa / 1.0e-6;
+	scalar C_global = 59.0 * 1.0e-6 / cmH20_to_pa;
+
+	// get flow rate at outlet, and amount of volume exited the outlet
 	wk[i].Q_current = calculate_flow_rate(i,mesh,phi);
-	dpc = derivative(wk[i].Pc_current, wk[i].Pc_previous, wk[i].Pc_previous2);
-	dpq = derivative(wk[i].Q_current, wk[i].Q_previous, wk[i].Q_previous2);
+	wk[i].volumeCurrent = wk[i].volumePrevious + wk[i].Q_current*dt;
 
-	p = wk[i].Q_current
-	- wk[i].C*back_derivative(wk[i].P_previous, wk[i].P_previous2)
-	+ wk[i].Z*(wk[i].C*dpq+wk[i].Q_current/wk[i].R)
-	+ wk[i].Pout_current/wk[i].R+wk[i].C*dpc;
-
-	scalar P_current = p/(1.0/wk[i].R+wk[i].C*front_derivative());
-
-	wk[i].P_current = P_current;
-    
+	// calculate pressure at outlet
+	wk[i].P_current = R_global * wk[i].Q_current 
+		+ wk[i].volumeCurrent / C_global
+		+ drivingPressure;
 
 	/*Saving the pressure in a scalar array*/
-	store[i]=P_current;
+	store[i] = wk[i].P_current;
 
-	Info<< "Pressure: " << P_current << " Pa" << endl; 
-
+	// debug check
+	Info<< "Driving pressure: " << drivingPressure << tab << "outlet pressure: " << wk[i].P_current << endl; 
 }
 
 void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
 	// Update variables to new "previous" and "previous2", then update pressure at outlet
 
+	// scalar pa_to_cmH20 = 0.010197162129779282;
+	scalar cmH20_to_pa = 98.0665;
+	scalar inhalationDuration = 4.0;
+
+
+	scalar tidalVolume = 0.0005;
+	scalar R_global = 7.0e-3 * cmH20_to_pa / 1.0e-6;
+	scalar C_global = 59.0 * 1.0e-6 / cmH20_to_pa;
+
   int i;
+  scalar pi = 3.141591;
+
+	scalar volumeWithTimePrevious = -0.5 * (
+		tidalVolume * Foam::cos(2.0*pi*(t-dt)/inhalationDuration)
+		- tidalVolume
+	);
+	scalar volumeWithTime = -0.5 * (
+		tidalVolume * Foam::cos(2.0*pi*t/inhalationDuration)
+		- tidalVolume
+	);
+
+
+
+
+	/// maybe should use Next instead of previous (forward integration)
+	scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
+	drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
+	Info << "volumeWithTime " << volumeWithTime << tab 
+			 << "flowRateWithTime " << flowRateWithTime << endl;
 
   for (i=0;i<N_OUTLETS;i++)
     {
@@ -281,6 +315,8 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       wk[i].Q_previous = wk[i].Q_current;
       wk[i].Pout_previous = wk[i].Pout_current;
       wk[i].Pc_previous = wk[i].Pc_current;
+
+      wk[i].volumePrevious = wk[i].volumeCurrent;
 
       /*Update WindKessel values*/
 

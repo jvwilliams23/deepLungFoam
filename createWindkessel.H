@@ -47,9 +47,7 @@ IOdictionary windkesselProperties
  N_OUTLETS = sizeOf;
  Info << "Number of outlets are :" << N_OUTLETS << endl;
 
-/* Define timestep and density for use with Windkessel */ 
-
-dt = runTime.deltaTValue();
+/* Define density for use with Windkessel */ 
 
 IOdictionary transportProperties_extra
 (
