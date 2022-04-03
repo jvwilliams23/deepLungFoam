@@ -2,11 +2,17 @@
 double RHO_0;
 double dt;
 double t;
+scalar tidalVolume;
+scalar breathingPeriod;
+int numLobes;
+// float lobe_area;
+float lobe_area[0];
 // double time;
 double drivingPressure;
 int N_OUTLETS;
 //char* patch_names[] = {"OUTLET_ACA","OUTLET_MCA"};
 DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
+// DynamicList<double> lobe_area
 
 /* Windkessel Structure Definition */
 typedef struct {
@@ -24,6 +30,9 @@ typedef struct {
 	double Pc_previous2;  /* 2 Previous back-pressure */
 	double volumeCurrent;
 	double volumePrevious;
+	int lobeIndex;
+	double outletArea; /* outlet area */
+	double areaRatio; /* ratio of outlet area to sum of all area in lobe */
 	// double drivingPressure;
 	int id;			/* Windkessel element id */
 	double R;		/* Resistance */
@@ -61,8 +70,6 @@ void initialise(const dictionary& windkesselProperties)
 		wk[i].volumePrevious = 0.0;
 	}	
 
-
-
 	/* Retrieving values from windkessel dictionary*/
 
  const wordList outletNames(windkesselProperties.toc());
@@ -78,6 +85,7 @@ void initialise(const dictionary& windkesselProperties)
      scalar R = readScalar(subDict.lookup("R"));
      scalar Z = readScalar(subDict.lookup("Z"));
      scalar real_index = readScalar(subDict.lookup("outIndex"));
+     label lobeIndex = readScalar(subDict.lookup("lobeIndex"));
 
 
      int out_index = real_index;
@@ -88,6 +96,9 @@ void initialise(const dictionary& windkesselProperties)
      wk[out_index].C 			= C;
      wk[out_index].Z 			= Z;
      wk[out_index].id 			= out_index;
+     wk[out_index].lobeIndex = lobeIndex;
+     wk[out_index].outletArea = 0.0; //mesh.magSf().boundaryField()[outletName];
+     wk[out_index].areaRatio = 0.0;
    }
 
 
@@ -265,8 +276,60 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	store[i] = wk[i].P_current;
 
 	// debug check
-	Info<< "Driving pressure: " << drivingPressure << tab << "outlet pressure: " << wk[i].P_current << endl; 
+	Info << "Driving pressure: " << drivingPressure << tab 
+			 << "outlet pressure: " << wk[i].P_current << endl; 
 }
+
+void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
+{
+	int i;
+	// double lobe_area[numLobes];
+	for (i=0;i<numLobes;i++)
+	{
+		lobe_area[i] = 0.0;
+	}
+
+ const wordList outletNames(windkesselProperties.toc());
+
+ 	forAll(outletNames, item)
+  {
+		const word& outletName = outletNames[item];
+
+		const dictionary& subDict = windkesselProperties.subDict(outletName);
+
+		scalar real_index = readScalar(subDict.lookup("outIndex"));
+		// scalar lobeIndex = readScalar(subDict.lookup("lobeIndex"));
+
+		int out_index = real_index;
+ 		label patchID = mesh.boundaryMesh().findPatchID(outletName); 
+
+		int lobeIndex = wk[out_index].lobeIndex;
+		wk[out_index].outletArea = gSum(mesh.magSf().boundaryField()[patchID]);
+		Info << "patch " << patch_names[out_index] << tab 
+				 << "area " << wk[out_index].outletArea << endl;
+		// wk[out_index].areaRatio += wk[out_index].outletArea;
+		lobe_area[lobeIndex] += wk[out_index].outletArea;
+  }
+
+ 	forAll(outletNames, item)
+  {
+		const word& outletName = outletNames[item];
+
+		const dictionary& subDict = windkesselProperties.subDict(outletName);
+
+		scalar real_index = readScalar(subDict.lookup("outIndex"));
+		// scalar lobeIndex = readScalar(subDict.lookup("lobeIndex"));
+
+		int out_index = real_index;
+ 		label patchID = mesh.boundaryMesh().findPatchID(outletName); 
+
+		int lobeIndex = wk[out_index].lobeIndex;
+		wk[out_index].areaRatio = wk[out_index].outletArea / lobe_area[lobeIndex];
+		Info << "outlet area ratio is " << wk[out_index].areaRatio << endl;
+	}
+
+}
+
 
 void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
@@ -274,28 +337,23 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 
 	// scalar pa_to_cmH20 = 0.010197162129779282;
 	scalar cmH20_to_pa = 98.0665;
-	scalar inhalationDuration = 4.0;
 
-
-	scalar tidalVolume = 0.0005;
 	scalar R_global = 7.0e-3 * cmH20_to_pa / 1.0e-6;
 	scalar C_global = 59.0 * 1.0e-6 / cmH20_to_pa;
 
-  int i;
   scalar pi = 3.141591;
 
 	scalar volumeWithTimePrevious = -0.5 * (
-		tidalVolume * Foam::cos(2.0*pi*(t-dt)/inhalationDuration)
+		tidalVolume * Foam::cos(2.0*pi*(t-dt)/breathingPeriod)
 		- tidalVolume
 	);
 	scalar volumeWithTime = -0.5 * (
-		tidalVolume * Foam::cos(2.0*pi*t/inhalationDuration)
+		tidalVolume * Foam::cos(2.0*pi*t/breathingPeriod)
 		- tidalVolume
 	);
 
 
-
-
+	int i;
 	/// maybe should use Next instead of previous (forward integration)
 	scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
 	drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
@@ -304,6 +362,7 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 
   for (i=0;i<N_OUTLETS;i++)
     {
+    	Info << "patch" << patch_names[i]<< endl;
 
       /* Save previous states */
       wk[i].P_previous2 = wk[i].P_previous;
