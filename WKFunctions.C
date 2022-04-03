@@ -6,7 +6,9 @@ scalar tidalVolume;
 scalar breathingPeriod;
 int numLobes;
 // float lobe_area;
-float lobe_area[0];
+// float lobe_area[0];
+#include <vector>
+std::vector<float> lobe_area;
 // double time;
 double drivingPressure;
 int N_OUTLETS;
@@ -266,11 +268,15 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	// get flow rate at outlet, and amount of volume exited the outlet
 	wk[i].Q_current = calculate_flow_rate(i,mesh,phi);
 	wk[i].volumeCurrent = wk[i].volumePrevious + wk[i].Q_current*dt;
+	scalar R_outlet = R_global / wk[i].areaRatio;
+	scalar C_outlet = C_global * wk[i].areaRatio;
 
 	// calculate pressure at outlet
-	wk[i].P_current = R_global * wk[i].Q_current 
-		+ wk[i].volumeCurrent / C_global
+	wk[i].P_current = R_outlet * wk[i].Q_current 
+		+ wk[i].volumeCurrent / C_outlet
 		+ drivingPressure;
+
+	Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
 
 	/*Saving the pressure in a scalar array*/
 	store[i] = wk[i].P_current;
@@ -283,34 +289,32 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
 {
 	int i;
-	// double lobe_area[numLobes];
+	// initialise vector of total areas per lobe
 	for (i=0;i<numLobes;i++)
 	{
-		lobe_area[i] = 0.0;
+		lobe_area.push_back(0.0);
 	}
 
- const wordList outletNames(windkesselProperties.toc());
+	const wordList outletNames(windkesselProperties.toc());
 
+	// get outlet areas for all outlets
  	forAll(outletNames, item)
   {
 		const word& outletName = outletNames[item];
 
 		const dictionary& subDict = windkesselProperties.subDict(outletName);
-
 		scalar real_index = readScalar(subDict.lookup("outIndex"));
-		// scalar lobeIndex = readScalar(subDict.lookup("lobeIndex"));
-
 		int out_index = real_index;
- 		label patchID = mesh.boundaryMesh().findPatchID(outletName); 
-
 		int lobeIndex = wk[out_index].lobeIndex;
+
+ 		label patchID = mesh.boundaryMesh().findPatchID(outletName); 
 		wk[out_index].outletArea = gSum(mesh.magSf().boundaryField()[patchID]);
 		Info << "patch " << patch_names[out_index] << tab 
 				 << "area " << wk[out_index].outletArea << endl;
-		// wk[out_index].areaRatio += wk[out_index].outletArea;
 		lobe_area[lobeIndex] += wk[out_index].outletArea;
   }
 
+  // get ratio of area at outlet i compared to total outlet area at lobe j
  	forAll(outletNames, item)
   {
 		const word& outletName = outletNames[item];
@@ -318,10 +322,8 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
 		const dictionary& subDict = windkesselProperties.subDict(outletName);
 
 		scalar real_index = readScalar(subDict.lookup("outIndex"));
-		// scalar lobeIndex = readScalar(subDict.lookup("lobeIndex"));
-
 		int out_index = real_index;
- 		label patchID = mesh.boundaryMesh().findPatchID(outletName); 
+
 
 		int lobeIndex = wk[out_index].lobeIndex;
 		wk[out_index].areaRatio = wk[out_index].outletArea / lobe_area[lobeIndex];
