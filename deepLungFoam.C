@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     #include "initContinuityErrs.H"
 
     turbulence->validate();
-    get_area_ratios(mesh, windkesselProperties);
+    get_area_ratios(mesh, windkesselProperties, lungProperties);
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
