@@ -35,6 +35,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
+const bool debugChecks = false;
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 #include "turbulentTransportModel.H"

@@ -13,7 +13,8 @@ std::vector<float> lobe_area;
 double drivingPressure;
 int N_OUTLETS;
 //char* patch_names[] = {"OUTLET_ACA","OUTLET_MCA"};
-DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
+// DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
+std::vector<string> patch_names;
 // DynamicList<double> lobe_area
 
 /* Windkessel Structure Definition */
@@ -250,7 +251,10 @@ double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 
 	reduce(outflow, sumOp<scalar>());
 
-	Info << "Flowrate for " << patch_names[i] << " :  " << outflow << endl; 
+	if (debugChecks)
+	{
+		Info << "Flowrate for " << patch_names[i] << " :  " << outflow << endl; 
+	}
 
 	return outflow;
 
@@ -276,14 +280,18 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 		+ wk[i].volumeCurrent / C_outlet
 		+ drivingPressure;
 
-	Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
 
 	/*Saving the pressure in a scalar array*/
 	store[i] = wk[i].P_current;
 
 	// debug check
-	Info << "Driving pressure: " << drivingPressure << tab 
-			 << "outlet pressure: " << wk[i].P_current << endl; 
+	if (debugChecks)
+	{
+		Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
+		Info << "Driving pressure: " << drivingPressure << tab 
+				 << "outlet pressure: " << wk[i].P_current << endl; 
+	}
+
 }
 
 void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
@@ -359,12 +367,25 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 	/// maybe should use Next instead of previous (forward integration)
 	scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
 	drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
-	Info << "volumeWithTime " << volumeWithTime << tab 
-			 << "flowRateWithTime " << flowRateWithTime << endl;
+	if (debugChecks)
+	{
+		Info << "volumeWithTime " << volumeWithTime << tab 
+				 << "flowRateWithTime " << flowRateWithTime << endl;
+	}
 
   for (i=0;i<N_OUTLETS;i++)
     {
-    	Info << "patch" << patch_names[i]<< endl;
+    	
+    	// empty patch with no faces, so skip to avoid floating point errors
+    	if (wk[i].outletArea == 0)
+    	{
+    		continue;
+    	}
+			if (debugChecks)
+			{
+    		Info << "patch" << patch_names[i]<< endl;
+			}
+
 
       /* Save previous states */
       wk[i].P_previous2 = wk[i].P_previous;
