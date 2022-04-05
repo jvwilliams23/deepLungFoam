@@ -87,15 +87,14 @@ RHO_0 = rho.value();
 
 /* Updating global array patch_names */
 
-
+Info << "assigning outIndex" << endl;
 forAll(outletNames, item)
 {
 
  const word& outletName = outletNames[item];
  const dictionary& subDict = windkesselProperties.subDict(outletName);
- int realIndex = readScalar(subDict.lookup("outIndex"));
 
- patch_names[realIndex] = outletName;
+ patch_names.push_back(outletName);
 }
 
 for (int it_check = 0; it_check < N_OUTLETS; it_check++)

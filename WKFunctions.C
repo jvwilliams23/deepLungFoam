@@ -9,6 +9,7 @@ int numLobes;
 // float lobe_area[0];
 #include <vector>
 std::vector<float> lobe_area;
+std::vector<float> lobe_vol_fraction; //how much of total volume is represented by lobe j
 // double time;
 double drivingPressure;
 int N_OUTLETS;
@@ -280,7 +281,6 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 		+ wk[i].volumeCurrent / C_outlet
 		+ drivingPressure;
 
-
 	/*Saving the pressure in a scalar array*/
 	store[i] = wk[i].P_current;
 
@@ -294,16 +294,47 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 
 }
 
-void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
+void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, const dictionary& lungProperties)
 {
 	int i;
+    //const dictionary& subDictLobeVol = lungProperties.subDict("lobeVols").lookup("lobeVols");
+    const List<scalar> lobeVols = lungProperties.lookup("lobeVols");
+
+    // check number of entries is correct
+    if (lobeVols.size() != numLobes)
+    {
+        FatalErrorInFunction
+            << "Incorrect num entries for lobeVols in lungProperties" << endl
+            << "Num entries is " << lobeVols.size() << " but numLobes is " << numLobes << endl
+            << abort(FatalError);
+    }
+
+    //const List<scalarField> lobeVolNames(subDictLobeVol);
+
+    // initialise scalar to check total volume fraction equals 1
+    scalar totalVolFraction = 0.0;
+
 	// initialise vector of total areas per lobe
 	for (i=0;i<numLobes;i++)
 	{
 		lobe_area.push_back(0.0);
+        lobe_vol_fraction.push_back(lobeVols[i]);
+
+        totalVolFraction += lobeVols[i];
+        //const scalar lobeVol = lobeVolNames[i];
+        Info << "lobeVol is " << lobeVols[i] << endl;
 	}
 
+    if (totalVolFraction < 0.95 or totalVolFraction > 1.05)
+    {
+        FatalErrorInFunction
+            << "total lobar volume fraction does not equal one: " << totalVolFraction << endl
+            << abort(FatalError);
+    }
+
 	const wordList outletNames(windkesselProperties.toc());
+
+    // TODO: add check to see that there is a lobe for each numLobe and each lobeIndex in windkesselProperties
 
 	// get outlet areas for all outlets
  	forAll(outletNames, item)
@@ -334,7 +365,7 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties)
 
 
 		int lobeIndex = wk[out_index].lobeIndex;
-		wk[out_index].areaRatio = wk[out_index].outletArea / lobe_area[lobeIndex];
+		wk[out_index].areaRatio = wk[out_index].outletArea * lobeVols[lobeIndex] / lobe_area[lobeIndex];
 		Info << "outlet area ratio is " << wk[out_index].areaRatio << endl;
 	}
 
@@ -385,7 +416,6 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 			{
     		Info << "patch" << patch_names[i]<< endl;
 			}
-
 
       /* Save previous states */
       wk[i].P_previous2 = wk[i].P_previous;
