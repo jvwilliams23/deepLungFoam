@@ -54,6 +54,8 @@ IOdictionary lungProperties
 numLobes = readScalar(lungProperties.lookup("numLobes"));
 breathingPeriod = readScalar(lungProperties.lookup("breathingPeriod"));
 tidalVolume = readScalar(lungProperties.lookup("tidalVolume"));
+C_globalCmH20 = readScalar(lungProperties.lookup("C_globalCmH20"));
+R_globalCmH20 = readScalar(lungProperties.lookup("R_globalCmH20"));
 
 /* Finding the number of outlets */
 
@@ -92,7 +94,7 @@ forAll(outletNames, item)
 {
 
  const word& outletName = outletNames[item];
- const dictionary& subDict = windkesselProperties.subDict(outletName);
+ //const dictionary& subDict = windkesselProperties.subDict(outletName);
 
  patch_names.push_back(outletName);
 }

@@ -12,6 +12,8 @@ std::vector<float> lobe_area;
 std::vector<float> lobe_vol_fraction; //how much of total volume is represented by lobe j
 // double time;
 double drivingPressure;
+double R_globalCmH20;
+double C_globalCmH20;
 int N_OUTLETS;
 //char* patch_names[] = {"OUTLET_ACA","OUTLET_MCA"};
 // DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
@@ -379,8 +381,8 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 	// scalar pa_to_cmH20 = 0.010197162129779282;
 	scalar cmH20_to_pa = 98.0665;
 
-	scalar R_global = 7.0e-3 * cmH20_to_pa / 1.0e-6;
-	scalar C_global = 59.0 * 1.0e-6 / cmH20_to_pa;
+	scalar R_global = R_globalCmH20 * cmH20_to_pa / 1.0e-6;
+	scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
 
   scalar pi = 3.141591;
 
