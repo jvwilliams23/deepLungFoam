@@ -268,9 +268,9 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	// scalar p,dpc,dpq;
 	scalar cmH20_to_pa = 98.0665;
 
-	// define some hard-coded global parameters
-	scalar R_global = 7.0e-3 * cmH20_to_pa / 1.0e-6;
-	scalar C_global = 59.0 * 1.0e-6 / cmH20_to_pa;
+	// define some global parameters
+	scalar R_global = R_globalCmH20 * cmH20_to_pa / 1.0e-6;
+	scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
 
 	// get flow rate at outlet, and amount of volume exited the outlet
 	wk[i].Q_current = calculate_flow_rate(i,mesh,phi);
