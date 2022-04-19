@@ -107,6 +107,7 @@ Info<< "\nStarting time loop\n" << endl;
 
 	/* Updating the Windkessel struct data structure*/
 	execute_at_end(mesh,phi,store);
+    p.relax();
 
         runTime.write();
 
