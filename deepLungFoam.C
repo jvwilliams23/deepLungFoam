@@ -35,7 +35,7 @@ Description
 
 \*---------------------------------------------------------------------------*/
 
-const bool debugChecks = false;
+bool debugChecks = false;
 #include "fvCFD.H"
 #include "singlePhaseTransportModel.H"
 #include "turbulentTransportModel.H"
@@ -51,6 +51,13 @@ const bool debugChecks = false;
 
 int main(int argc, char *argv[])
 {
+
+    timeSelector::addOptions();
+    argList::addBoolOption
+    (
+        "debug",
+        "print debug checks"
+    );
 
     #include "postProcess.H"
     #include "setRootCase.H"
@@ -74,6 +81,9 @@ int main(int argc, char *argv[])
 	
 
 Info<< "\nStarting time loop\n" << endl;
+
+    debugChecks = args.optionFound("debug");
+
 
     while (runTime.run())
     {

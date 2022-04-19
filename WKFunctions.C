@@ -2,6 +2,7 @@
 double RHO_0;
 double dt;
 double t;
+int t_step;
 scalar tidalVolume;
 scalar breathingPeriod;
 int numLobes;
@@ -12,6 +13,8 @@ std::vector<float> lobe_area;
 std::vector<float> lobe_vol_fraction; //how much of total volume is represented by lobe j
 // double time;
 double drivingPressure;
+double drivingPressure_previous;
+double drivingPressure_previous2;
 double R_globalCmH20;
 double C_globalCmH20;
 int N_OUTLETS;
@@ -36,6 +39,7 @@ typedef struct {
 	double Pc_previous2;  /* 2 Previous back-pressure */
 	double volumeCurrent;
 	double volumePrevious;
+    double volumePrevious2;
 	int lobeIndex;
 	double outletArea; /* outlet area */
 	double areaRatio; /* ratio of outlet area to sum of all area in lobe */
@@ -74,6 +78,7 @@ void initialise(const dictionary& windkesselProperties)
 		wk[i].Pc_previous2 	= 0;
 		wk[i].volumeCurrent = 0.0;
 		wk[i].volumePrevious = 0.0;
+        wk[i].volumePrevious2 = 0.0;
 	}	
 
 	/* Retrieving values from windkessel dictionary*/
@@ -246,6 +251,7 @@ double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 	scalar outflow = 0.0;
 
 	label outletPatch = mesh.boundaryMesh().findPatchID(patch_names[i]);
+    labelList patchCells = mesh.boundaryMesh()[outletPatch].faceCells();
 
 	if (outletPatch >=0)
 	{
@@ -263,6 +269,37 @@ double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 
 }
 
+double integrate_pressure_euler(int i, double R_outlet, double C_outlet)
+{
+    // calculate pressure at outlet
+    scalar P_current = R_outlet * wk[i].Q_current 
+        + wk[i].volumeCurrent / C_outlet
+        + drivingPressure;
+    return P_current;
+}
+
+double integrate_pressure_AB2(int i, double R_outlet, double C_outlet)
+{
+    // calculate pressure at outlet w/ second order AB
+    scalar C1 = 1.0;
+    scalar C2 = 0.0;
+    //scalar C3 = 0.0; // leave here for later third order test
+    if (t_step >= 1)
+    {
+        C1 = 3.0 / 2.0;
+        C2 = -1.0 / 2.0;
+    }
+    
+    scalar P_current =  
+        C1 * (R_outlet * wk[i].Q_current
+        + wk[i].volumeCurrent / C_outlet
+        + drivingPressure) 
+        + C2 * (R_outlet * wk[i].Q_previous
+        + wk[i].volumePrevious / C_outlet
+        + drivingPressure_previous);
+    return P_current;
+}
+
 void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
 	// scalar p,dpc,dpq;
@@ -278,10 +315,14 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	scalar R_outlet = R_global / wk[i].areaRatio;
 	scalar C_outlet = C_global * wk[i].areaRatio;
 
+/*
 	// calculate pressure at outlet
 	wk[i].P_current = R_outlet * wk[i].Q_current 
 		+ wk[i].volumeCurrent / C_outlet
 		+ drivingPressure;
+*/
+
+    wk[i].P_current = integrate_pressure_AB2(i, R_outlet, C_outlet);
 
 	/*Saving the pressure in a scalar array*/
 	store[i] = wk[i].P_current;
@@ -399,6 +440,10 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
 	int i;
 	/// maybe should use Next instead of previous (forward integration)
 	scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
+
+    // update drivingPressure
+    drivingPressure_previous2 = drivingPressure_previous;
+    drivingPressure_previous = drivingPressure;
 	drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
 	if (debugChecks)
 	{
@@ -430,6 +475,7 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       wk[i].Pout_previous = wk[i].Pout_current;
       wk[i].Pc_previous = wk[i].Pc_current;
 
+      wk[i].volumePrevious2 = wk[i].volumePrevious;
       wk[i].volumePrevious = wk[i].volumeCurrent;
 
       /*Update WindKessel values*/
@@ -437,5 +483,6 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       Wk_pressure_update(i, RHO_0, mesh, phi,store);
 
     }
-
+    // track number of time-steps (for AB scheme coeffs)
+    t_step ++;
 }
