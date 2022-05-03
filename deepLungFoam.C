@@ -76,9 +76,9 @@ int main(int argc, char *argv[])
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-    //			SOLVING FOR FLUID FLOW
+    //          SOLVING FOR FLUID FLOW
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-	
+    
 
 Info<< "\nStarting time loop\n" << endl;
 
@@ -113,21 +113,20 @@ Info<< "\nStarting time loop\n" << endl;
                 laminarTransport.correct();
                 turbulence->correct();
             }
-    execute_at_end(mesh,phi,store);
-    p.correctBoundaryConditions();
-    U.correctBoundaryConditions();
-
-
-
+            execute_pressure_update(mesh,phi,store);
+            // p.correctBoundaryConditions();
+            // U.correctBoundaryConditions();
         }
 
-	/* Updating the Windkessel struct data structure*/
-	//execute_at_end(mesh,phi,store);
+    execute_at_end(mesh,phi,store);
+
+    /* Updating the Windkessel struct data structure*/
+    //execute_at_end(mesh,phi,store);
     //p.correctBoundaryConditions();
     //U.correctBoundaryConditions();
     //p.relax();
 
-        runTime.write();
+    runTime.write();
 
     if (dt<1.e-6)
     {
