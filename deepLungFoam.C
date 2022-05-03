@@ -113,13 +113,30 @@ Info<< "\nStarting time loop\n" << endl;
                 laminarTransport.correct();
                 turbulence->correct();
             }
+    execute_at_end(mesh,phi,store);
+    p.correctBoundaryConditions();
+    U.correctBoundaryConditions();
+
+
+
         }
 
 	/* Updating the Windkessel struct data structure*/
-	execute_at_end(mesh,phi,store);
-    p.relax();
+	//execute_at_end(mesh,phi,store);
+    //p.correctBoundaryConditions();
+    //U.correctBoundaryConditions();
+    //p.relax();
 
         runTime.write();
+
+    if (dt<1.e-6)
+    {
+        FatalErrorInFunction
+            << " Timestep too small. Something is wrong with the setup or solver" 
+            << nl << exit(FatalError);
+
+            
+    }
 
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"

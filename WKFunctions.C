@@ -260,11 +260,6 @@ double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
 
 	reduce(outflow, sumOp<scalar>());
 
-	if (debugChecks)
-	{
-		Info << "Flowrate for " << patch_names[i] << " :  " << outflow << endl; 
-	}
-
 	return outflow;
 
 }
@@ -310,19 +305,19 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
 
 	// get flow rate at outlet, and amount of volume exited the outlet
-	wk[i].Q_current = calculate_flow_rate(i,mesh,phi);
+	wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi), 0.0);
+    if (wk[i].Q_current < 0)
+    {
+        FatalErrorInFunction
+            << "Reversed flow at outlet" << endl
+            << abort(FatalError);
+    }
 	wk[i].volumeCurrent = wk[i].volumePrevious + wk[i].Q_current*dt;
 	scalar R_outlet = R_global / wk[i].areaRatio;
 	scalar C_outlet = C_global * wk[i].areaRatio;
 
-/*
-	// calculate pressure at outlet
-	wk[i].P_current = R_outlet * wk[i].Q_current 
-		+ wk[i].volumeCurrent / C_outlet
-		+ drivingPressure;
-*/
-
-    wk[i].P_current = integrate_pressure_AB2(i, R_outlet, C_outlet);
+    scalar P_outlet_current = integrate_pressure_euler(i, R_outlet, C_outlet);
+    wk[i].P_current = min(P_outlet_current, 0.0);
 
 	/*Saving the pressure in a scalar array*/
 	store[i] = wk[i].P_current;
@@ -330,6 +325,7 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 	// debug check
 	if (debugChecks)
 	{
+        Info << "Flow rate at outlet " << tab << wk[i].Q_current << tab << "vol" << tab << wk[i].volumeCurrent << endl;
 		Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
 		Info << "Driving pressure: " << drivingPressure << tab 
 				 << "outlet pressure: " << wk[i].P_current << endl; 
