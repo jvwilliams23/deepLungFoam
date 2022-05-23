@@ -541,7 +541,7 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       wk[i].volumePrevious2 = wk[i].volumePrevious;
       wk[i].volumePrevious = wk[i].volumeCurrent;
 
-      wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi), 0.0);
+      // wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi,U), 0.0);
       wk[i].volumeCurrent = wk[i].volumePrevious + wk[i].Q_current*dt;
     }
     // track number of time-steps (for AB scheme coeffs)
