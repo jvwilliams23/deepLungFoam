@@ -102,6 +102,8 @@ Info<< "\nStarting time loop\n" << endl;
         {
             #include "UEqn.H"
 
+            execute_pressure_update(mesh,phi,store);
+
             // --- Pressure corrector loop
             while (pimple.correct())
             {
@@ -113,7 +115,7 @@ Info<< "\nStarting time loop\n" << endl;
                 laminarTransport.correct();
                 turbulence->correct();
             }
-            execute_pressure_update(mesh,phi,store);
+            // execute_pressure_update(mesh,phi,store);
             // p.correctBoundaryConditions();
             // U.correctBoundaryConditions();
         }

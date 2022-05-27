@@ -270,6 +270,14 @@ double integrate_pressure_euler(int i, double R_outlet, double C_outlet)
     scalar P_current = R_outlet * wk[i].Q_current 
         + wk[i].volumeCurrent / C_outlet
         + drivingPressure;
+  if (debugChecks)
+  {
+    //Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
+    Info << "Term1 " << R_outlet * wk[i].Q_current << tab
+         << "Term2 " << wk[i].volumeCurrent / C_outlet << tab
+         << "Term3 " << drivingPressure << endl;
+  }
+
     return P_current;
 }
 
@@ -418,8 +426,9 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
 
 
     int lobeIndex = wk[out_index].lobeIndex;
+    
     wk[out_index].areaRatio = wk[out_index].outletArea * lobeVols[lobeIndex] / lobe_area[lobeIndex];
-    Info << "outlet area ratio is " << wk[out_index].areaRatio << endl;
+    Info << "outlet " << out_index <<" area ratio is " << wk[out_index].areaRatio << tab << "lobe " << lobeIndex << endl;
   }
 
 }
@@ -521,10 +530,6 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       if (wk[i].outletArea == 0)
       {
         continue;
-      }
-      if (debugChecks)
-      {
-        Info << "patch" << patch_names[i]<< endl;
       }
 
       /* Save previous states */
