@@ -6,22 +6,16 @@ int t_step;
 scalar tidalVolume;
 scalar breathingPeriod;
 int numLobes;
-// float lobe_area;
-// float lobe_area[0];
 #include <vector>
 std::vector<float> lobe_area;
 std::vector<float> lobe_vol_fraction; //how much of total volume is represented by lobe j
-// double time;
 double drivingPressure;
 double drivingPressure_previous;
 double drivingPressure_previous2;
 double R_globalCmH20;
 double C_globalCmH20;
 int N_OUTLETS;
-//char* patch_names[] = {"OUTLET_ACA","OUTLET_MCA"};
-// DynamicList<string> patch_names(10); // 10 has been set as the maximum limit of outlets that are expected
 std::vector<string> patch_names;
-// DynamicList<double> lobe_area
 
 /* Windkessel Structure Definition */
 typedef struct {
@@ -31,12 +25,6 @@ typedef struct {
   double P_current;     /* Current time stepproximal pressure */
   double P_previous;      /* Previous time step proximal pressure */
   double P_previous2;   /* 2 Previous time step proximal pressure */
-  double Pout_current;    /* Current back-pressure */
-  double Pout_previous; /* Previous back-pressure */
-  double Pout_previous2;  /* 2 Previous back-pressure */
-  double Pc_current;    /* Current back-pressure */
-  double Pc_previous; /* Previous back-pressure */
-  double Pc_previous2;  /* 2 Previous back-pressure */
   double volumeCurrent;
   double volumePrevious;
     double volumePrevious2;
@@ -70,12 +58,6 @@ void initialise(const dictionary& windkesselProperties)
     wk[i].P_current   = 0; /* Proximal pressure */
     wk[i].P_previous  = 0;
     wk[i].P_previous2   = 0;
-    wk[i].Pout_current  = 0;  /* Venous pressure */
-    wk[i].Pout_previous = 0;
-    wk[i].Pout_previous2 = 0;
-    wk[i].Pc_current  = 0;  /* Intramural pressure */
-    wk[i].Pc_previous   = 0;
-    wk[i].Pc_previous2  = 0;
     wk[i].volumeCurrent = 0.0;
     wk[i].volumePrevious = 0.0;
         wk[i].volumePrevious2 = 0.0;
@@ -108,7 +90,7 @@ void initialise(const dictionary& windkesselProperties)
      wk[out_index].Z      = Z;
      wk[out_index].id       = out_index;
      wk[out_index].lobeIndex = lobeIndex;
-     wk[out_index].outletArea = 0.0; //mesh.magSf().boundaryField()[outletName];
+     wk[out_index].outletArea = 0.0; 
      wk[out_index].areaRatio = 0.0;
    }
 
@@ -116,135 +98,6 @@ void initialise(const dictionary& windkesselProperties)
  /* End of file*/
 
 }
-
-
-double first_order_derivative(double x, double xp)
-{
-  double derivative;
-
-  derivative = (x - xp)/dt;
-
-  return derivative;
-}
-
-double front_first_order_derivative()
-{
-  double derivative;
-
-  derivative = 1.0/dt;
-
-  return derivative;
-}
-
-double back_first_order_derivative(double xp)
-{
-  double derivative;
-
-  derivative = -xp/dt;
-
-  return derivative;
-}
-
-double second_order_derivative(double x, double xp,double xp2)
-{
-  double derivative;
-
-  derivative = (1.5*x - 2.0*xp + 0.5*xp2)/dt;
-
-  return derivative;
-}
-
-double front_second_order_derivative()
-{
-  double derivative;
-
-  derivative = 1.5/dt;
-
-  return derivative;
-}
-
-double back_second_order_derivative(double xp, double xp2)
-{
-  double derivative;
-
-  derivative = (-2.0*xp + 0.5*xp2)/dt;
-
-  return derivative;
-}
-
-double derivative(double x, double xp, double xp2)
-{
-  double d;
-
-  // d = first_order_derivative(x,xp);
-
-  d = second_order_derivative(x,xp,xp2);
-
-  return d;
-}
-
-double front_derivative()
-{
-  double d;
-  //d = front_first_order_derivative();
-
-  d = front_second_order_derivative();
-
-  return d;
-}
-
-double back_derivative(double xp, double xp2)
-{
-    double d;
-    //d = back_first_order_derivative(xp);
-    d = back_second_order_derivative(xp,xp2);
-
-    return d;
-}
-
-/*double calculate_flow_rate_additional(int i, fvMesh & mesh, volVectorField & U)
-{
-  scalar flux = 0.0;
-
-  word outlet_name = patch_names[i];
-
-  //access boundary elements 
-  const fvPatchList& patches = mesh.boundary(); 
-
-  //loop over boundaries 
-  forAll(patches, patchI) 
-  { 
-      const fvPatch& cPatch = patches[patchI]; 
-
-      //check boundary name 
-      if(cPatch.name() == outlet_name) 
-        { 
-
-    //Access boundary face area vectors 
-    const vectorField& inletAreaVectors = cPatch.Sf(); 
-
-    //loop over all faces of selected 
-    //boundary 
-    forAll(cPatch, faceI) 
-    { 
-
-        //calculate boundary face mass flux 
-                    scalar cFaceFlux = U.boundaryField()[patchI][faceI] & inletAreaVectors[faceI]; 
-
-                     //sum face mass fluxes 
-                     flux += cFaceFlux; 
-    } 
-
-        } 
-
-    } 
-
-  Info<< "FlowRate: " << flux << " m^3/s" << endl; 
-
-
-  return flux;
-
-}*/
 
 double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi, volVectorField& U)
 {
@@ -313,32 +166,15 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 
   // get flow rate at outlet, and amount of volume exited the outlet
   wk[i].Q_current = calculate_flow_rate(i,mesh,phi,U); //max(calculate_flow_rate(i,mesh,phi), 0.0);
-  //wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi), 0.0);
-
 
   if (debugChecks)
   {
     Info << "Flow rate at outlet " << tab << wk[i].Q_current << tab << "vol" << tab << wk[i].volumeCurrent << endl;
   }
-  /*  if (wk[i].Q_current < 0)
-    {
-        FatalErrorInFunction
-            << "Reversed flow at outlet" << endl
-            << abort(FatalError);
-    }*/
   scalar R_outlet = R_global / wk[i].areaRatio;
   scalar C_outlet = C_global * wk[i].areaRatio;
 
   scalar P_outlet_current = integrate_pressure_euler(i, R_outlet, C_outlet);
-  /*if (wk[i].Q_current < 0.0)
-  {
-    wk[i].Q_current = 0.0;
-    wk[i].P_current = 0.0;
-  }
-  else
-  {
-    wk[i].P_current = min(P_outlet_current, 0.0);
-  }*/
   wk[i].P_current = P_outlet_current; 
 
   /*Saving the pressure in a scalar array*/
@@ -347,7 +183,6 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
   // debug check
   if (debugChecks)
   {
-    //Info << "R_outlet " << R_outlet << tab << "C_outlet " << C_outlet << endl;
     Info << "Driving pressure: " << drivingPressure << tab 
          << "outlet pressure: " << wk[i].P_current << endl; 
   }
@@ -441,39 +276,7 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
 
 void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store, volVectorField& U)
 {
-  // Update variables to new "previous" and "previous2", then update pressure at outlet
-
   int i;
-  // scalar pa_to_cmH20 = 0.010197162129779282;
-  //scalar cmH20_to_pa = 98.0665;
-
-  //scalar R_global = R_globalCmH20 * cmH20_to_pa / 1.0e-6;
-  //scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
-
-  //scalar pi = 3.141591;
-
-  // scalar volumeWithTimePrevious = -0.5 * (
-  //   tidalVolume * Foam::cos(2.0*pi*(t-dt)/breathingPeriod)
-  //   - tidalVolume
-  // );
-  // scalar volumeWithTime = -0.5 * (
-  //   tidalVolume * Foam::cos(2.0*pi*t/breathingPeriod)
-  //   - tidalVolume
-  // );
-
-
-  // /// maybe should use Next instead of previous (forward integration)
-  // scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
-
-  //   // update drivingPressure
-  // drivingPressure_previous2 = drivingPressure_previous;
-  // drivingPressure_previous = drivingPressure;
-  // drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
-  // if (debugChecks)
-  // {
-  //   Info << "volumeWithTime " << volumeWithTime << tab 
-  //        << "flowRateWithTime " << flowRateWithTime << endl;
-  // }
 
   for (i=0;i<N_OUTLETS;i++)
     {
@@ -496,8 +299,6 @@ void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOLi
 
 void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
 {
-  // Update variables to new "previous" and "previous2", then update pressure at outlet
-
   // scalar pa_to_cmH20 = 0.010197162129779282;
   scalar cmH20_to_pa = 98.0665;
 
@@ -540,13 +341,9 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       /* Save previous states */
       wk[i].P_previous2 = wk[i].P_previous;
       wk[i].Q_previous2 = wk[i].Q_previous;
-      wk[i].Pout_previous2 = wk[i].Pout_previous;
-      wk[i].Pc_previous2 = wk[i].Pc_previous;
 
       wk[i].P_previous = wk[i].P_current;
       wk[i].Q_previous = wk[i].Q_current;
-      wk[i].Pout_previous = wk[i].Pout_current;
-      wk[i].Pc_previous = wk[i].Pc_current;
 
       wk[i].volumePrevious2 = wk[i].volumePrevious;
       wk[i].volumePrevious = wk[i].volumeCurrent;
