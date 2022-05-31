@@ -122,18 +122,14 @@ void WKBCFvPatchScalarField::updateCoeffs()
     /*Applying the pressure to each face on the outlet*/
     forAll(report,it)
     {
-		report[it] = current_pressure; ///rho_f;
-		
+		report[it] = current_pressure/rho_f;
     }
- 
+    
     /*Assigning the operator to the new patch field*/
     scalarField::operator= 
     (
      report
     );
-    
-
-
     
 }
 

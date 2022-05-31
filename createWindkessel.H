@@ -89,21 +89,26 @@ RHO_0 = rho.value();
 
 /* Updating global array patch_names */
 
+forAll(outletNames, item)
+{
+ // initialise list of length = number of outlets
+ patch_names.push_back("-1");
+}
+
 Info << "assigning outIndex" << endl;
 forAll(outletNames, item)
 {
-
  const word& outletName = outletNames[item];
- //const dictionary& subDict = windkesselProperties.subDict(outletName);
 
- patch_names.push_back(outletName);
+ const dictionary& subDict = windkesselProperties.subDict(outletName);
+ scalar outlet_index = readScalar(subDict.lookup("outIndex"));
+
+ patch_names[outlet_index] = outletName;
 }
 
 for (int it_check = 0; it_check < N_OUTLETS; it_check++)
 {
-
   Info << "Patch array " << it_check << " is " << patch_names[it_check] << endl;
-
 }
 
 /* Creating scalar list for storage of pressure values*/

@@ -55,4 +55,6 @@ p.relax();
 
 U = HbyA - rAtU()*fvc::grad(p);
 U.correctBoundaryConditions();
-fvOptions.correct(U);
+p.correctBoundaryConditions();
+//fvOptions.correct(U);
+

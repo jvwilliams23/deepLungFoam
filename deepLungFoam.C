@@ -102,7 +102,7 @@ Info<< "\nStarting time loop\n" << endl;
         {
             #include "UEqn.H"
 
-            execute_pressure_update(mesh,phi,store);
+            execute_pressure_update(mesh,phi,store,U);
 
             // --- Pressure corrector loop
             while (pimple.correct())

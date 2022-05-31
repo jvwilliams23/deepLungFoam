@@ -246,12 +246,11 @@ double back_derivative(double xp, double xp2)
 
 }*/
 
-double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi)
+double calculate_flow_rate(int i, fvMesh & mesh, surfaceScalarField & phi, volVectorField& U)
 {
   scalar outflow = 0.0;
 
   label outletPatch = mesh.boundaryMesh().findPatchID(patch_names[i]);
-    labelList patchCells = mesh.boundaryMesh()[outletPatch].faceCells();
 
   if (outletPatch >=0)
   {
@@ -303,7 +302,7 @@ double integrate_pressure_AB2(int i, double R_outlet, double C_outlet)
     return P_current;
 }
 
-void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
+void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store, volVectorField& U)
 {
   // scalar p,dpc,dpq;
   scalar cmH20_to_pa = 98.0665;
@@ -313,7 +312,7 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
   scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
 
   // get flow rate at outlet, and amount of volume exited the outlet
-  wk[i].Q_current = calculate_flow_rate(i,mesh,phi); //max(calculate_flow_rate(i,mesh,phi), 0.0);
+  wk[i].Q_current = calculate_flow_rate(i,mesh,phi,U); //max(calculate_flow_rate(i,mesh,phi), 0.0);
   //wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi), 0.0);
 
 
@@ -398,16 +397,21 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
     // TODO: add check to see that there is a lobe for each numLobe and each lobeIndex in windkesselProperties
 
   // get outlet areas for all outlets
+  Info << "Get outlet areas" << endl;
   forAll(outletNames, item)
   {
+    if (debugChecks) Info << "item " << item << endl;
     const word& outletName = outletNames[item];
+    if (debugChecks) Info << "outlet name " << outletName << endl;
 
     const dictionary& subDict = windkesselProperties.subDict(outletName);
     scalar real_index = readScalar(subDict.lookup("outIndex"));
     int out_index = real_index;
     int lobeIndex = wk[out_index].lobeIndex;
 
+    if (debugChecks) Info << "get patch label" << endl;
     label patchID = mesh.boundaryMesh().findPatchID(outletName); 
+    if (debugChecks) Info << "find patch area" << endl;
     wk[out_index].outletArea = gSum(mesh.magSf().boundaryField()[patchID]);
     Info << "patch " << patch_names[out_index] << tab 
          << "area " << wk[out_index].outletArea << endl;
@@ -415,6 +419,7 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
   }
 
   // get ratio of area at outlet i compared to total outlet area at lobe j
+  Info << "Get area ratio" << endl;
   forAll(outletNames, item)
   {
     const word& outletName = outletNames[item];
@@ -434,18 +439,18 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
 }
 
 
-void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store)
+void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store, volVectorField& U)
 {
   // Update variables to new "previous" and "previous2", then update pressure at outlet
 
   int i;
   // scalar pa_to_cmH20 = 0.010197162129779282;
-  scalar cmH20_to_pa = 98.0665;
+  //scalar cmH20_to_pa = 98.0665;
 
-  scalar R_global = R_globalCmH20 * cmH20_to_pa / 1.0e-6;
-  scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
+  //scalar R_global = R_globalCmH20 * cmH20_to_pa / 1.0e-6;
+  //scalar C_global = C_globalCmH20 * 1.0e-6 / cmH20_to_pa;
 
-  scalar pi = 3.141591;
+  //scalar pi = 3.141591;
 
   // scalar volumeWithTimePrevious = -0.5 * (
   //   tidalVolume * Foam::cos(2.0*pi*(t-dt)/breathingPeriod)
@@ -483,7 +488,7 @@ void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOLi
         Info << "patch" << patch_names[i]<< endl;
       }
 
-      Wk_pressure_update(i, RHO_0, mesh, phi,store);
+      Wk_pressure_update(i, RHO_0, mesh, phi, store, U);
 
     }
 }
