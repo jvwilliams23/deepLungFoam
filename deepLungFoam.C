@@ -84,17 +84,33 @@ Info<< "\nStarting time loop\n" << endl;
 
     debugChecks = args.optionFound("debug");
 
+    scalar sineWaveCoCutoff = 0.2;
+    scalar sineWaveFreq = 0.0;
 
     while (runTime.run())
     {
+        t = runTime.value();
+        sineWaveFreq = mag(Foam::sin(2.0*3.141*t/breathingPeriod));
+
+        //Info << "maxCo " << maxCo << endl;
+
         #include "readTimeControls.H"
         #include "CourantNo.H"
+        if (sineWaveFreq < sineWaveCoCutoff)
+        {
+            maxCo = earlyStageMaxCo;
+        }
+        else
+        {
+            maxCo = developedFlowMaxCo;
+        }
         #include "setDeltaT.H"
+
+        Info << "maxCo " << maxCo << tab << "sineWaveFreqCriterion " << sineWaveFreq << endl;
 
         runTime++;
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
-        t = runTime.value();
         dt = runTime.deltaTValue();
 
         // --- Pressure-velocity PIMPLE corrector loop

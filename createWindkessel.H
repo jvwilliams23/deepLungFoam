@@ -57,6 +57,16 @@ tidalVolume = readScalar(lungProperties.lookup("tidalVolume"));
 C_globalCmH20 = readScalar(lungProperties.lookup("C_globalCmH20"));
 R_globalCmH20 = readScalar(lungProperties.lookup("R_globalCmH20"));
 
+
+/*
+ simulation is sensitive to timestep when flow is developing or transitioning to
+ exhalation. Therefore, as a simple fix we provide two maximum Courant numbers.
+ One will be used when the flow is developed (between 0.15 to 0.85*t_inhale).
+ The other will be used at early (and late) stages of inhalation.
+*/
+scalar developedFlowMaxCo = 0.5;
+scalar earlyStageMaxCo = 0.1; // use this value as maxCo 
+
 /* Finding the number of outlets */
 
  const wordList outletNames(windkesselProperties.toc());
