@@ -146,7 +146,7 @@ Info<< "\nStarting time loop\n" << endl;
 
     runTime.write();
 
-    if (dt<1.e-6)
+    if ((dt<1.e-6) and debugChecks)
     {
         FatalErrorInFunction
             << " Timestep too small. Something is wrong with the setup or solver" 

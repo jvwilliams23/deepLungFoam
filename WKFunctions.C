@@ -166,6 +166,12 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
 
   // get flow rate at outlet, and amount of volume exited the outlet
   wk[i].Q_current = calculate_flow_rate(i,mesh,phi,U); //max(calculate_flow_rate(i,mesh,phi), 0.0);
+  if (wk[i].Q_current < 0.0)
+  {
+    wk[i].Q_current = 0.0;
+    //wk[i].P_current = 0.0;
+  }
+  //wk[i].Q_current = max(calculate_flow_rate(i,mesh,phi,U), 0.0);
 
   if (debugChecks)
   {
@@ -174,8 +180,9 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
   scalar R_outlet = R_global / wk[i].areaRatio;
   scalar C_outlet = C_global * wk[i].areaRatio;
 
-  scalar P_outlet_current = integrate_pressure_euler(i, R_outlet, C_outlet);
-  wk[i].P_current = P_outlet_current; 
+  scalar P_outlet_current = integrate_pressure_euler(i, R_outlet, C_outlet); 
+  //wk[i].P_current = P_outlet_current;
+  wk[i].P_current = min(P_outlet_current, 0.0); //P_outlet_current; 
 
   /*Saving the pressure in a scalar array*/
   store[i] = wk[i].P_current;
