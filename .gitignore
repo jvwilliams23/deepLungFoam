@@ -1,2 +1,4 @@
 Make/linux*
+*/Make/linux*
+*/*.swp
 *.swp
