@@ -2,9 +2,17 @@
 double RHO_0;
 double dt;
 double t;
+double offsetTime (0.0);
 int t_step;
 scalar tidalVolume;
 scalar breathingPeriod;
+scalar inhalationDuration;
+scalar breathHoldDuration;
+int numBreathsTracked (0.0);
+bool breathHoldFound (false);
+scalar nextBreathHoldStart (0.0);
+scalar nextBreathHoldEnd (0.0);
+scalar accumulatedBreathHoldTime (0.0);
 int numLobes;
 #include <vector>
 std::vector<float> lobe_area;
@@ -12,6 +20,7 @@ std::vector<float> lobe_vol_fraction; //how much of total volume is represented 
 double drivingPressure;
 double drivingPressure_previous;
 double drivingPressure_previous2;
+double flowRateWithTime;
 double R_globalCmH20;
 double C_globalCmH20;
 int N_OUTLETS;
@@ -31,7 +40,6 @@ typedef struct {
   int lobeIndex;
   double outletArea; /* outlet area */
   double areaRatio; /* ratio of outlet area to sum of all area in lobe */
-  // double drivingPressure;
   int id;     /* Windkessel element id */
   double R;   /* Resistance */
   double C;   /* Compliance */
@@ -335,25 +343,52 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
   scalar pi = 3.141591;
   int i;
 
-  scalar volumeWithTimePrevious = -0.5 * (
-    tidalVolume * Foam::cos(2.0*pi*(t-dt)/breathingPeriod)
-    - tidalVolume
-  );
-  scalar volumeWithTime = -0.5 * (
-    tidalVolume * Foam::cos(2.0*pi*t/breathingPeriod)
-    - tidalVolume
-  );
-  /// maybe should use Next instead of previous (forward integration)
-  scalar flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
-
-    // update drivingPressure
-    drivingPressure_previous2 = drivingPressure_previous;
-    drivingPressure_previous = drivingPressure;
-  drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
-  if (debugChecks)
+  // check if new breath hold is scheduled, and turn on bool switch
+  if (not breathHoldFound and t >= nextBreathHoldStart)
   {
-    Info << "volumeWithTime " << volumeWithTime << tab 
-         << "flowRateWithTime " << flowRateWithTime << endl;
+      breathHoldFound = true;
+  }
+
+  // if no breath-hold, perform normal calculations to get flowrate etc
+  if (not breathHoldFound)
+  {
+      scalar volumeWithTimePrevious = -0.5 * (
+              tidalVolume * Foam::cos(2.0*pi*(offsetTime-dt)/breathingPeriod)
+              - tidalVolume
+              );
+      scalar volumeWithTime = -0.5 * (
+              tidalVolume * Foam::cos(2.0*pi*offsetTime/breathingPeriod)
+              - tidalVolume
+              );
+      /// maybe should use Next instead of previous (forward integration)
+      flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
+
+      // update drivingPressure
+      drivingPressure_previous2 = drivingPressure_previous;
+      drivingPressure_previous = drivingPressure;
+      drivingPressure = -1.0*R_global * flowRateWithTime - volumeWithTime / C_global;
+
+      if (debugChecks)
+      {
+          Info << "volumeWithTime " << volumeWithTime << tab
+              << "flowRateWithTime " << flowRateWithTime << endl;
+      }
+
+  }
+  else
+  {
+      flowRateWithTime = 0.0;
+      drivingPressure = 0.0;
+
+      if (breathHoldFound and t >= nextBreathHoldEnd)
+      {
+          breathHoldFound = false;
+          accumulatedBreathHoldTime += breathHoldDuration;
+          numBreathsTracked ++;
+          nextBreathHoldStart = (breathingPeriod * numBreathsTracked) 
+                                + inhalationDuration + accumulatedBreathHoldTime;
+          nextBreathHoldEnd = nextBreathHoldStart + breathHoldDuration;
+      }
   }
 
   for (i=0;i<N_OUTLETS;i++)

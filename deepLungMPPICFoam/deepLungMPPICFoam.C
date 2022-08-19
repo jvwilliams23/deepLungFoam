@@ -42,6 +42,7 @@ bool oneWayCoupling = false;
 #include "WKFunctions.C"   // Windkessel function file
 #include "WKBCFvPatchScalarField.H"
 
+bool newBreathHoldFound = false;
 
 #include "basicKinematicMPPICCloud.H"
 #define basicKinematicTypeCloud basicKinematicMPPICCloud
@@ -86,15 +87,21 @@ int main(int argc, char *argv[])
     scalar sineWaveCoCutoff = 0.2;
     scalar sineWaveFreq = 0.0;
 
+    offsetTime = 0.0;
 
     while (runTime.run())
     {
         #include "readTimeControls.H"
         #include "CourantNo.H"
 
+
+/// NEED TO INCLUDE ACCUMULATED BREAHT HOLD TIME HERE
+        offsetTime = t - accumulatedBreathHoldTime;
+
+
         runTime++;
         t = runTime.value();
-        sineWaveFreq = mag(Foam::sin(2.0*3.141*t/breathingPeriod));
+        sineWaveFreq = mag(Foam::sin(2.0*3.141*offsetTime/breathingPeriod));
         if (sineWaveFreq < sineWaveCoCutoff)
         {
             maxCo = earlyStageMaxCo;
@@ -178,6 +185,22 @@ int main(int argc, char *argv[])
         Info<< "ExecutionTime = " << runTime.elapsedCpuTime() << " s"
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;
+
+        // how to add breath hold ???
+        //breathHoldFound = true;
+        //if (t - breathingPeriod / 2 > 0)
+        /*
+
+        if (t - breathingPeriod / 2 > 0)
+        {
+            accumulatedBreathHoldTime = accumulatedBreathHoldTime + breathHoldDuration
+
+        }
+
+        */
+
+
+
     }
 
     Info<< "End\n" << endl;

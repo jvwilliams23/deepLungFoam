@@ -53,9 +53,13 @@ IOdictionary lungProperties
 
 numLobes = readScalar(lungProperties.lookup("numLobes"));
 breathingPeriod = readScalar(lungProperties.lookup("breathingPeriod"));
+inhalationDuration = breathingPeriod / 2.0;
 tidalVolume = readScalar(lungProperties.lookup("tidalVolume"));
+breathHoldDuration = lungProperties.lookupOrDefault("breathHoldDuration", 0);
 C_globalCmH20 = readScalar(lungProperties.lookup("C_globalCmH20"));
 R_globalCmH20 = readScalar(lungProperties.lookup("R_globalCmH20"));
+
+scalar accumulatedBreathHoldTime = 0.0;
 
 
 /*
