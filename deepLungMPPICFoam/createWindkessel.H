@@ -69,7 +69,7 @@ scalar accumulatedBreathHoldTime = 0.0;
  The other will be used at early (and late) stages of inhalation.
 */
 
-scalar earlyStageMaxCo = lungProperties.lookupOrDefault("earlyStageMaxCo", 0.0);
+scalar earlyStageMaxCo = lungProperties.lookupOrDefault("earlyStageMaxCo", 0.1);
 scalar developedFlowMaxCo = lungProperties.lookupOrDefault("developedFlowMaxCo", 0.5);
 
 /* Finding the number of outlets */
