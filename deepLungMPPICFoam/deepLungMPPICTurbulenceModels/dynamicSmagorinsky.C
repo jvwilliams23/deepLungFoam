@@ -171,9 +171,8 @@ void dynamicSmagorinsky<BasicTurbulenceModel>::correct()
     }
 
     // Local references
-    const surfaceScalarField& phi = this->phi_;
     const volVectorField& U = this->U_;
-    fv::options& fvOptions(fv::options::New(this->mesh_));
+    //fv::options& fvOptions(fv::options::New(this->mesh_));
 
     LESeddyViscosity<BasicTurbulenceModel>::correct();
 

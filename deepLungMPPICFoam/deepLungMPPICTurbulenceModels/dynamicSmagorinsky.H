@@ -65,36 +65,35 @@ class dynamicSmagorinsky
 {
     // Private Member Functions
 
-        // Disallow default bitwise copy construct and assignment
-        dynamicSmagorinsky(const dynamicSmagorinsky&);
-        void operator=(const dynamicSmagorinsky&);
+    // Disallow default bitwise copy construct and assignment
+    dynamicSmagorinsky(const dynamicSmagorinsky&);
+    void operator=(const dynamicSmagorinsky&);
 
 
-protected:
+    protected:
 
     // Protected data
 
-        volScalarField Cs_;
-        volScalarField k_;
-//       volScalarField beta_;
-   
-        simpleFilter simpleFilter_;
-        autoPtr<LESfilter> filterPtr_;
-        LESfilter& filter_;
+    volScalarField k_;
+    volScalarField Cs_;
 
-      
-    
+    simpleFilter simpleFilter_;
+    autoPtr<LESfilter> filterPtr_;
+    LESfilter& filter_;
+
+
+
 
 
     // Protected Member Functions
 
-        //- Update sub-grid eddy-viscosity
-        void correctNut(const tmp<volTensorField>& gradU);
+    //- Update sub-grid eddy-viscosity
+    void correctNut(const tmp<volTensorField>& gradU);
 
-        virtual void correctNut();
+    virtual void correctNut();
 
 
-public:
+    public:
 
     typedef typename BasicTurbulenceModel::alphaField alphaField;
     typedef typename BasicTurbulenceModel::rhoField rhoField;
@@ -106,17 +105,17 @@ public:
 
     // Constructors
 
-        //- Construct from components
-        dynamicSmagorinsky
+    //- Construct from components
+    dynamicSmagorinsky
         (
-            const alphaField& alpha,
-            const rhoField& rho,
-            const volVectorField& U,
-            const surfaceScalarField& alphaRhoPhi,
-            const surfaceScalarField& phi,
-            const transportModel& transport,
-            const word& propertiesName = turbulenceModel::propertiesName,
-            const word& type = typeName
+         const alphaField& alpha,
+         const rhoField& rho,
+         const volVectorField& U,
+         const surfaceScalarField& alphaRhoPhi,
+         const surfaceScalarField& phi,
+         const transportModel& transport,
+         const word& propertiesName = turbulenceModel::propertiesName,
+         const word& type = typeName
         );
 
 
@@ -127,29 +126,29 @@ public:
 
     // Member Functions
 
-        //- Read model coefficients if they have changed
-        virtual bool read();
+    //- Read model coefficients if they have changed
+    virtual bool read();
 
-        //- Return SGS kinetic energy
-        virtual tmp<volScalarField> k() const
-        {
-            return k_;
-        }
+    //- Return SGS kinetic energy
+    virtual tmp<volScalarField> k() const
+    {
+        return k_;
+    }
 
-        //- Return the effective diffusivity for k
-        tmp<volScalarField> DkEff() const
-        {
-            return tmp<volScalarField>
+    //- Return the effective diffusivity for k
+    tmp<volScalarField> DkEff() const
+    {
+        return tmp<volScalarField>
             (
-                new volScalarField("DkEff", this->nut_ + this->nu())
+             new volScalarField("DkEff", this->nut_ + this->nu())
             );
-        }
+    }
 
-         //- Return sub-grid disipation rate
-         virtual tmp<volScalarField> epsilon() const;
+    //- Return sub-grid disipation rate
+    virtual tmp<volScalarField> epsilon() const;
 
-        //- Correct Eddy-Viscosity and related properties
-        virtual void correct();
+    //- Correct Eddy-Viscosity and related properties
+    virtual void correct();
 };
 
 
