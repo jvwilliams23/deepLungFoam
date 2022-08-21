@@ -179,6 +179,7 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
     When inhaling, cutoff negative flowrate at outlets
     During exhalation, cutoff positive flowrate at outlets
   */
+
   if (flowRateWithTime >= 0.0)
   {
     if (wk[i].Q_current < 0.0)
@@ -312,6 +313,8 @@ void get_area_ratios(fvMesh & mesh, const dictionary& windkesselProperties, cons
 void execute_pressure_update(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & store, volVectorField& U)
 {
   int i;
+
+  Info << "flowRateWithTime check" << flowRateWithTime << endl;
 
   for (i=0;i<N_OUTLETS;i++)
     {
