@@ -1,0 +1,4 @@
+devdeepLungMPPICFoam.C
+WKBCFvPatchScalarField.C
+
+EXE = $(FOAM_USER_APPBIN)/devdeepLungMPPICFoam
