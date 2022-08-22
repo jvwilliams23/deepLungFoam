@@ -61,6 +61,9 @@ R_globalCmH20 = readScalar(lungProperties.lookup("R_globalCmH20"));
 
 scalar accumulatedBreathHoldTime = 0.0;
 
+nextBreathHoldStart = inhalationDuration;
+nextBreathHoldEnd = nextBreathHoldStart + breathHoldDuration;
+
 
 /*
  simulation is sensitive to timestep when flow is developing or transitioning to

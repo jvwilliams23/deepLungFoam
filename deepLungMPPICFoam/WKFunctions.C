@@ -193,6 +193,8 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
       wk[i].Q_current = 0.0;
     }
   }
+ 
+  if (breathHoldFound) wk[i].Q_current = 0.0;
 
   if (debugChecks)
   {
@@ -202,6 +204,8 @@ void Wk_pressure_update(int i, double rho, fvMesh & mesh, surfaceScalarField & p
   scalar C_outlet = C_global * wk[i].areaRatio;
 
   scalar P_outlet_current = integrate_pressure_euler(i, R_outlet, C_outlet); 
+
+  if (breathHoldFound) wk[i].Q_current = 0.0;
 
   if (flowRateWithTime >= 0.0)
   {
@@ -344,9 +348,10 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
   int i;
 
   // check if new breath hold is scheduled, and turn on bool switch
-  if (not breathHoldFound and t >= nextBreathHoldStart)
+  if (not breathHoldFound and t >= nextBreathHoldStart and  breathHoldDuration > 0.0)
   {
       breathHoldFound = true;
+      Info << "BREATH HOLD FOUND at t = " << t << tab << nextBreathHoldStart << endl;
   }
 
   // if no breath-hold, perform normal calculations to get flowrate etc
@@ -372,12 +377,17 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
       {
           Info << "volumeWithTime " << volumeWithTime << tab
               << "flowRateWithTime " << flowRateWithTime << endl;
+        Info << "next breath hold starts and ends at : " << nextBreathHoldStart 
+            << tab << nextBreathHoldEnd << endl;
       }
 
   }
   else
   {
       flowRateWithTime = 0.0;
+
+      drivingPressure_previous2 = 0.0;
+      drivingPressure_previous = 0.0;
       drivingPressure = 0.0;
 
       if (breathHoldFound and t >= nextBreathHoldEnd)

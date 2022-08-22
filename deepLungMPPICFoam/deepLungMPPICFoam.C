@@ -82,12 +82,20 @@ int main(int argc, char *argv[])
 
     Info<< "\nStarting time loop\n" << endl;
 
+    if (args.optionFound("debug"))
+    {
+        debugChecks = true;
+    }
+
     get_area_ratios(mesh, windkesselProperties, lungProperties);
 
     scalar sineWaveCoCutoff = 0.2;
     scalar sineWaveFreq = 0.0;
 
     offsetTime = 0.0;
+
+    Info << "initial breath hold starts and ends at : " << nextBreathHoldStart
+        << tab << nextBreathHoldEnd << endl;
 
     while (runTime.run())
     {
