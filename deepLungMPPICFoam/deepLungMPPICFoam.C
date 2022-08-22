@@ -121,8 +121,18 @@ int main(int argc, char *argv[])
 
         #include "setDeltaT.H"
         dt = runTime.deltaTValue();
-        Info<< "Time = " << runTime.timeName() << nl << endl;
-
+    
+        if (breathHoldDuration > 0)
+        {
+            Info<< "Time = " << runTime.timeName() << tab 
+            << "offsetTime = " << offsetTime << tab 
+            << "accumulatedBreathHoldTime = " << accumulatedBreathHoldTime 
+            << nl << endl;
+        }
+        else
+        {
+            Info<< "Time = " << runTime.timeName() << nl << endl;
+        }
 
         continuousPhaseTransport.correct();
         muc = rhoc*continuousPhaseTransport.nu();
@@ -194,18 +204,6 @@ int main(int argc, char *argv[])
             << "  ClockTime = " << runTime.elapsedClockTime() << " s"
             << nl << endl;
 
-        // how to add breath hold ???
-        //breathHoldFound = true;
-        //if (t - breathingPeriod / 2 > 0)
-        /*
-
-        if (t - breathingPeriod / 2 > 0)
-        {
-            accumulatedBreathHoldTime = accumulatedBreathHoldTime + breathHoldDuration
-
-        }
-
-        */
 
 
 

@@ -398,10 +398,14 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
           nextBreathHoldStart = (breathingPeriod * numBreathsTracked) 
                                 + inhalationDuration + accumulatedBreathHoldTime;
           nextBreathHoldEnd = nextBreathHoldStart + breathHoldDuration;
+          Info << "BREATH HOLD FINISHED. Num breaths " << numBreathsTracked 
+          << tab << "accumulatedBreathHoldTime " << accumulatedBreathHoldTime 
+          << tab << "breathHoldDuration " << breathHoldDuration << endl;
+
       }
   }
 
-  for (i=0;i<N_OUTLETS;i++)
+  for (i=0;i<N_OUTLETS;i++) 
     {
       
       // empty patch with no faces, so skip to avoid floating point errors
