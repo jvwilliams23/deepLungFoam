@@ -59,8 +59,6 @@ breathHoldDuration = lungProperties.lookupOrDefault("breathHoldDuration", 0.0);
 C_globalCmH20 = readScalar(lungProperties.lookup("C_globalCmH20"));
 R_globalCmH20 = readScalar(lungProperties.lookup("R_globalCmH20"));
 
-scalar accumulatedBreathHoldTime = 0.0;
-
 nextBreathHoldStart = inhalationDuration;
 nextBreathHoldEnd = nextBreathHoldStart + breathHoldDuration;
 
