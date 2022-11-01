@@ -4,6 +4,7 @@ double dt;
 double t;
 double offsetTime (0.0);
 int t_step;
+word inhalationProfile = "tidal";
 scalar tidalVolume;
 scalar breathingPeriod;
 scalar inhalationDuration;
@@ -357,17 +358,23 @@ void execute_at_end(fvMesh & mesh, surfaceScalarField & phi, scalarIOList & stor
   // if no breath-hold, perform normal calculations to get flowrate etc
   if (not breathHoldFound)
   {
-      scalar volumeWithTimePrevious = -0.5 * (
-              tidalVolume * Foam::cos(2.0*pi*(offsetTime-dt)/breathingPeriod)
-              - tidalVolume
-              );
-      scalar volumeWithTime = -0.5 * (
-              tidalVolume * Foam::cos(2.0*pi*offsetTime/breathingPeriod)
-              - tidalVolume
-              );
-      /// maybe should use Next instead of previous (forward integration)
-      flowRateWithTime = (volumeWithTime - volumeWithTimePrevious) / dt;
-
+      scalar volumeWithTime(0.0);
+      Info << "inhalationProfile " << inhalationProfile << endl;
+      if (inhalationProfile == "tidal")
+      {
+          #include "tidalInhalation.H"
+      }
+      else if (inhalationProfile == "akita")
+      {
+          #include "akitaInhalation.H"
+      }
+      else
+      {
+        FatalErrorInFunction
+            << "unrecognised inhalationProfile " << inhalationProfile << nl
+            << "Recognised ones are : tidal or akita "
+            << abort(FatalError);
+      }
       // update drivingPressure
       drivingPressure_previous2 = drivingPressure_previous;
       drivingPressure_previous = drivingPressure;

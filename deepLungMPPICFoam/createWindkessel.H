@@ -72,6 +72,7 @@ nextBreathHoldEnd = nextBreathHoldStart + breathHoldDuration;
 
 scalar earlyStageMaxCo = lungProperties.lookupOrDefault("earlyStageMaxCo", 0.1);
 scalar developedFlowMaxCo = lungProperties.lookupOrDefault("developedFlowMaxCo", 0.5);
+inhalationProfile = lungProperties.lookupOrDefault<word>("inhalationProfile", "tidal");
 
 /* Finding the number of outlets */
 
